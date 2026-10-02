@@ -1,0 +1,192 @@
+
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+
+#include "CharAnimViewer.h"
+
+using namespace std;
+using namespace chara;
+
+
+CharAnimViewer* CharAnimViewer::psingleton = NULL;
+
+
+CharAnimViewer::CharAnimViewer() : Viewer(), m_frameNumber(0)
+{
+	psingleton = this;
+}
+
+
+int CharAnimViewer::init()
+{
+	Viewer::init();
+	cout << "==>master_CharAnim/CharAnimViewer" << endl;
+	m_camera.lookat(Point(0, 0, 0), 1000);
+	m_camera.rotation(180, 0);
+	gl.light(Point(300, 300, 300));
+
+	//b_draw_grid = false;
+
+	m_world.setParticlesCount(100);
+
+	init_cylinder();
+	init_sphere();
+
+
+	//m_bvh.init(smart_path("data/bvh/Robot.bvh"));
+	m_bvh.init(smart_path("data/bvh/danse.bvh"));
+
+	m_frameNumber = 0;
+	cout << endl << "========================" << endl;
+	cout << "BVH decription" << endl;
+	cout << m_bvh << endl;
+	cout << endl << "========================" << endl;
+
+	m_ske.init(m_bvh);
+	m_ske.setPose(m_bvh, -1);// met le skeleton a la pose au repos
+
+	return 0;
+}
+
+
+
+void CharAnimViewer::draw_skeleton(const Skeleton& sk)
+{
+	for (int i = 0; i < sk.numberOfJoint(); i++) {
+
+		draw_sphere(sk.getJointPosition(i), 6);
+
+		if (sk.getParentId(i) != -1) {
+			draw_cylinder(sk.getJointPosition(i), sk.getJointPosition(sk.getParentId(i)), 6);
+		}
+		/*switch (m_bvh.getJoint(i).getName()) {
+
+		}*/
+	}
+}
+
+void CharAnimViewer::draw_skeleton(const Skeleton& sk, const Transform& pos)
+{
+	for (int i = 0; i < sk.numberOfJoint(); i++) {
+
+		draw_sphere(pos(sk.getJointPosition(i)), 6);
+
+		if (sk.getParentId(i) != -1) {
+			draw_cylinder(pos(sk.getJointPosition(i)), pos(sk.getJointPosition(sk.getParentId(i))), 6);
+		}
+		/*switch (m_bvh.getJoint(i).getName()) {
+
+		}*/
+	}
+}
+
+void CharAnimViewer::collision_skeleton(const Skeleton& sk, const Transform& pos) {
+	for (int i = 0; i < sk.numberOfJoint(); i++) {
+		m_world.collision(pos(sk.getJointPosition(i)), 10);
+	}
+
+}
+
+
+
+
+
+int CharAnimViewer::render()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//draw_quad( RotationX(-90)*Scale(500,500,1) );
+
+	Viewer::manageCameraLight();
+	gl.camera(m_camera);
+
+	// Affiche les particules physiques (Question 3 : interaction personnage sphere/ballon)
+	m_world.draw();
+
+	/*draw_sphere(Point(b.position()), 20);
+	draw_cylinder(Point(b.position()), Point(b.position(40)), 10);*/
+
+	draw_skeleton(skc.getSkeleton(), Scale(2.5)(skc.getPos()));
+
+	// Affiche le skeleton à partir de la structure linéaire (tableau) Skeleton
+	draw_skeleton(m_ske);
+
+
+
+
+
+
+
+#if 0			// exercice du cours
+	float A[] = { 0, -10, -20, -30, -40 };
+	float B[] = { 0, -10, -20, -30, -40 };
+	float C[] = { 0, -10, -20, -30, -40 };
+	float D[] = { 0, 10, 20, 30, 40 };
+	float a, b, c, d;
+
+	static int t = 3;
+	//if (t == 4) t = 0; else t++;
+
+	a = A[t];
+	b = B[t];
+	c = C[t];
+	d = D[t];
+
+	Transform scaleS = Scale(12, 12, 12);
+	Transform scaleA = Scale(20, 20, 20);
+	Transform scale = Scale(10, 100, 10);
+	Transform A2W = RotationZ(a);
+	draw_cylinder(A2W * scale);
+	draw_sphere(A2W * scaleS);
+	draw_axe(A2W * scaleA);
+
+	Transform B2A = Translation(0, 100, 0) * RotationZ(b);
+	Transform B2W = A2W * B2A;
+	draw_cylinder(B2W * scale);
+	draw_sphere(B2W * scaleS);
+	draw_axe(B2W * scaleA);
+
+	Transform scaleP = Scale(5, 50, 5);
+	Transform C2B = Translation(0, 100, 0) * RotationZ(c);
+	Transform C2W = B2W * C2B;
+	draw_cylinder(C2W * scaleP);
+	draw_sphere(C2W * scaleS);
+	draw_axe(C2W * scaleA);
+
+	Transform D2B = Translation(0, 100, 0) * RotationZ(d);
+	Transform D2W = B2W * D2B;
+	draw_cylinder(D2W * scaleP);
+	draw_axe(D2W * scaleA);
+	draw_sphere(D2W * scaleS);
+#endif
+
+
+	return 1;
+}
+
+static const float delta60FPS = 1000 / 60;
+int CharAnimViewer::update(const float time, const float delta)
+{
+	// time est le temps ecoule depuis le demarrage de l'application, en millisecondes,
+	// delta est le temps ecoule depuis l'affichage de la derniere image / le dernier appel a draw(), en millisecondes.
+
+	if (true || key_state('n')) { m_frameNumber++; /*cout << m_frameNumber << endl;*/ }
+	if (key_state('b')) { m_frameNumber--; /*cout << m_frameNumber << endl;*/ }
+
+	m_ske.setPose(m_bvh, m_frameNumber);
+
+	m_world.update(0.1f * (delta / delta60FPS));
+
+	collision_skeleton(skc.getSkeleton(), Scale(2.5)(skc.getPos()));
+
+	skc.update(delta);
+
+
+
+	return 0;
+}
+
+
+
