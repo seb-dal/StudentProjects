@@ -5,7 +5,7 @@
 
 ## Installation et compilation
 
-Télécharger [Gkit2light](https://forge.univ-lyon1.fr/Alexandre.Meyer/gkit2light) 
+Télécharger [Gkit2light](https://forge.univ-lyon1.fr/Alexandre.Meyer/gkit2light/-/tree/d1e51382063938b70ff5b0b827607127cf219f1e/) 
 
 Suivre les étapes d'installation de Gkit2light pour l'IDE et l'OS voulut. [Lien](http://perso.univ-lyon1.fr/jean-claude.iehl/Public/educ/M1IMAGE/html/group__installation.html)
 
